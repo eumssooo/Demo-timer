@@ -134,6 +134,15 @@
   #startBtn:disabled:hover {
     background: var(--point);
   }
+
+  .clock {
+    margin-top: 32px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
 </style>
 </head>
 <body>
@@ -152,6 +161,8 @@
       <button id="stopBtn" disabled>정지</button>
       <button id="resetBtn">리셋</button>
     </div>
+
+    <div class="clock" id="clock"></div>
   </div>
 
   <script>
@@ -216,6 +227,19 @@
     startBtn.addEventListener('click', startTimer);
     stopBtn.addEventListener('click', stopTimer);
     resetBtn.addEventListener('click', resetTimer);
+
+    const clock = document.getElementById('clock');
+
+    function renderClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      clock.textContent = `현재 시각 ${h}:${m}:${s}`;
+    }
+
+    renderClock();
+    setInterval(renderClock, 1000);
 
     render();
   </script>
