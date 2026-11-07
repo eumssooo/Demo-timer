@@ -143,6 +143,35 @@
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
+
+  .toast {
+    position: fixed;
+    top: 32px;
+    left: 50%;
+    transform: translate(-50%, -16px);
+    padding: 16px 32px;
+    border-radius: 14px;
+    background: var(--point);
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 10;
+    white-space: nowrap;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  .toast.danger {
+    background: var(--danger);
+  }
 </style>
 </head>
 <body>
@@ -165,6 +194,8 @@
     <div class="clock" id="clock"></div>
   </div>
 
+  <div class="toast" id="toast"></div>
+
   <script>
     const TOTAL_SECONDS = 100 * 60;
     let remaining = TOTAL_SECONDS;
@@ -184,6 +215,64 @@
 
     const WARNING_THRESHOLD = 10 * 60;
 
+    const ANNOUNCEMENTS = [
+      { at: 30 * 60, message: '⏰ 30분 남았습니다', beeps: 1 },
+      { at: 10 * 60, message: '⏰ 10분 남았습니다', beeps: 2, danger: true },
+      { at: 1 * 60, message: '⏰ 1분 남았습니다!', beeps: 3, danger: true },
+    ];
+    let announced = new Set();
+
+    const toast = document.getElementById('toast');
+    let toastTimer = null;
+
+    function showToast(message, danger) {
+      toast.textContent = message;
+      toast.classList.toggle('danger', !!danger);
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 4000);
+    }
+
+    let audioCtx = null;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) audioCtx = new AudioCtx();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playBeep(times) {
+      if (!audioCtx) return;
+      let t = audioCtx.currentTime;
+      for (let i = 0; i < times; i++) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.3);
+        t += 0.35;
+      }
+    }
+
+    function checkAnnouncements() {
+      for (const a of ANNOUNCEMENTS) {
+        if (remaining === a.at && !announced.has(a.at)) {
+          announced.add(a.at);
+          showToast(a.message, a.danger);
+          playBeep(a.beeps);
+        }
+      }
+    }
+
     function render() {
       timeDisplay.textContent = formatTime(remaining);
       progressBar.style.width = (remaining / TOTAL_SECONDS * 100) + '%';
@@ -199,6 +288,7 @@
       }
       remaining -= 1;
       render();
+      checkAnnouncements();
       if (remaining <= 0) {
         stopTimer();
       }
@@ -206,6 +296,7 @@
 
     function startTimer() {
       if (timerId !== null || remaining <= 0) return;
+      ensureAudio();
       timerId = setInterval(tick, 1000);
       startBtn.disabled = true;
       stopBtn.disabled = false;
@@ -221,6 +312,8 @@
     function resetTimer() {
       stopTimer();
       remaining = TOTAL_SECONDS;
+      announced = new Set();
+      toast.classList.remove('show');
       render();
     }
 
