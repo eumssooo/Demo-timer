@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GROWTH LOG 해커톤</title>
+<style>
+  :root {
+    --point: #00962B;
+    --danger: #E6342B;
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --text: #f5f5f5;
+    --muted: #8a8a8a;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Pretendard", "Apple SD Gothic Neo", sans-serif;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 640px;
+    padding: 48px 24px;
+    text-align: center;
+  }
+
+  .title {
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--point);
+  }
+
+  .subtitle {
+    margin: 0 0 40px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .time-display {
+    font-size: clamp(80px, 24vw, 170px);
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    margin-bottom: 16px;
+    transition: color 0.3s ease;
+  }
+
+  .time-display.warning {
+    color: var(--danger);
+  }
+
+  .progress-track {
+    width: 100%;
+    height: 6px;
+    background: var(--surface);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 40px;
+  }
+
+  .progress-bar {
+    height: 100%;
+    width: 100%;
+    background: var(--point);
+    border-radius: 999px;
+    transition: width 1s linear, background 0.3s ease;
+  }
+
+  .progress-bar.warning {
+    background: var(--danger);
+  }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  button {
+    flex: 1;
+    max-width: 140px;
+    padding: 14px 0;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 12px;
+    border: 2px solid var(--point);
+    background: transparent;
+    color: var(--point);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+  }
+
+  button:hover {
+    background: rgba(0, 150, 43, 0.12);
+  }
+
+  button:active {
+    transform: scale(0.98);
+  }
+
+  #startBtn {
+    background: var(--point);
+    color: #ffffff;
+  }
+
+  #startBtn:hover {
+    background: #007a23;
+  }
+
+  button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  button:disabled:hover {
+    background: transparent;
+  }
+
+  #startBtn:disabled:hover {
+    background: var(--point);
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <p class="title">GROWTH LOG 해커톤</p>
+    <p class="subtitle">100분 카운트다운 타이머</p>
+
+    <div class="time-display" id="timeDisplay">100:00</div>
+
+    <div class="progress-track">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="controls">
+      <button id="startBtn">시작</button>
+      <button id="stopBtn" disabled>정지</button>
+      <button id="resetBtn">리셋</button>
+    </div>
+  </div>
+
+  <script>
+    const TOTAL_SECONDS = 100 * 60;
+    let remaining = TOTAL_SECONDS;
+    let timerId = null;
+
+    const timeDisplay = document.getElementById('timeDisplay');
+    const progressBar = document.getElementById('progressBar');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    function formatTime(totalSeconds) {
+      const m = Math.floor(totalSeconds / 60);
+      const s = totalSeconds % 60;
+      return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
+    const WARNING_THRESHOLD = 10 * 60;
+
+    function render() {
+      timeDisplay.textContent = formatTime(remaining);
+      progressBar.style.width = (remaining / TOTAL_SECONDS * 100) + '%';
+      const isWarning = remaining <= WARNING_THRESHOLD && remaining > 0;
+      timeDisplay.classList.toggle('warning', isWarning);
+      progressBar.classList.toggle('warning', isWarning);
+    }
+
+    function tick() {
+      if (remaining <= 0) {
+        stopTimer();
+        return;
+      }
+      remaining -= 1;
+      render();
+      if (remaining <= 0) {
+        stopTimer();
+      }
+    }
+
+    function startTimer() {
+      if (timerId !== null || remaining <= 0) return;
+      timerId = setInterval(tick, 1000);
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+    }
+
+    function stopTimer() {
+      clearInterval(timerId);
+      timerId = null;
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    }
+
+    function resetTimer() {
+      stopTimer();
+      remaining = TOTAL_SECONDS;
+      render();
+    }
+
+    startBtn.addEventListener('click', startTimer);
+    stopBtn.addEventListener('click', stopTimer);
+    resetBtn.addEventListener('click', resetTimer);
+
+    render();
+  </script>
+</body>
+</html>
